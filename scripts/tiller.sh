@@ -23,11 +23,11 @@ function usage() {
   Helm plugin for using Tiller locally
 
   Usage:
-    helm tiller install
-    helm tiller start [tiller_namespace]
-    helm tiller start-ci [tiller_namespace]
-    helm tiller stop
-    helm tiller run [tiller_namespace] -- [command] [args]
+    helm2 tiller install
+    helm2 tiller start [tiller_namespace]
+    helm2 tiller start-ci [tiller_namespace]
+    helm2 tiller stop
+    helm2 tiller run [tiller_namespace] -- [command] [args]
 
   Available Commands:
     install   Manually install/upgrade Tiller binary
@@ -38,7 +38,7 @@ function usage() {
     stop      Stop Tiller
 
   Available environment variables:
-    'HELM_TILLER_SILENT=true' - silence plugin specific messages, only `helm` cli output will be printed.
+    'HELM_TILLER_SILENT=true' - silence plugin specific messages, only `helm2` cli output will be printed.
     'HELM_TILLER_PORT=44140' - change Tiller port, default is `44134`.
     'HELM_TILLER_PROBE_PORT=44141' - change Tiller probe port, default is `44135`. Requires Helm >= 2.14.
     'HELM_TILLER_STORAGE=configmap' - change Tiller storage to `configmap`, default is `secret`.
@@ -48,29 +48,29 @@ function usage() {
     'CREATE_NAMESPACE_IF_MISSING=false' - indicate whether the namespace should be created if it does not exist.
 
   Example use with the set namespace:
-    $ helm tiller start my-tiller-namespace
+    $ helm2 tiller start my-tiller-namespace
 
   Example use of `run`, that starts/stops tiller before/after the specified command:
-    $ helm tiller run helm list
-    $ helm tiller run my-tiller-namespace -- helm list
-    $ helm tiller run my-tiller-namespace -- bash -c 'echo running helm; helm list'
+    $ helm2 tiller run helm2 list
+    $ helm2 tiller run my-tiller-namespace -- helm2 list
+    $ helm2 tiller run my-tiller-namespace -- bash -c 'echo running helm2; helm2 list'
 
   Example use of `env` to set environment variables for start-ci:
-    $ source <(helm tiller env my-tiller-namespace)
+    $ source <(helm2 tiller env my-tiller-namespace)
 
   EOF
 }
 
-check_helm() {
-  # Check if helm is installed
-  if ! command -v helm >/dev/null 2>&1; then
+check_helm2() {
+  # Check if helm2 is installed
+  if ! command -v helm2 >/dev/null 2>&1; then
     echo "Helm client is not installed!"
     exit 0
   fi
 }
 
 check_install_tiller() {
-  INSTALLED_HELM=$(helm version -c --short | awk -F[:+] '{print $2}' | cut -d ' ' -f 2)
+  INSTALLED_HELM=$(helm2 version -c --short | awk -F[:+] '{print $2}' | cut -d ' ' -f 2)
   if [[ "${HELM_TILLER_SILENT}" == "false" ]]; then
       echo "Installed Helm version $INSTALLED_HELM"
   fi
@@ -95,7 +95,7 @@ check_install_tiller() {
         echo "Installed Tiller version $INSTALLED_TILLER"
     fi
   fi
-  # check if tiller and helm versions match
+  # check if tiller and helm2 versions match
   if [[ "${INSTALLED_HELM}" == "${INSTALLED_TILLER}" ]]; then
     if [[ "${HELM_TILLER_SILENT}" == "false" ]]; then
         echo "Helm and Tiller are the same version!"
@@ -105,7 +105,7 @@ check_install_tiller() {
   fi
 }
 
-helm_env() {
+helm2_env() {
   if [[ -n "$1" ]]
   then
     # Set namespace
@@ -174,7 +174,7 @@ run_tiller() {
 stop_tiller() {
   if [[ "${HELM_TILLER_SILENT}" == "false" ]]; then
     echo "Stopping Tiller..."
-    pkill -9 -f ./bin/tiller 
+    pkill -9 -f ./bin/tiller
   else
     pkill -9 -f ./bin/tiller &> /dev/null
   fi
@@ -189,13 +189,13 @@ fi
 
 case $COMMAND in
 install)
-  check_helm
+  check_helm2
   check_install_tiller
     ;;
 start)
-  check_helm
+  check_helm2
   check_install_tiller
-  eval '$(helm_env "$@")'
+  eval '$(helm2_env "$@")'
   start_tiller
   cd "${CURRENT_FOLDER}"
   # open user's preferred shell
@@ -208,21 +208,21 @@ start)
   stop_tiller
   ;;
 start-ci)
-  check_helm
+  check_helm2
   check_install_tiller
   if [[ "${HELM_TILLER_SILENT}" == "false" ]]; then
     echo "Set the following vars to use tiller:"
-    helm_env "$@"
+    helm2_env "$@"
   else
-    helm_env "$@" &> /dev/null
+    helm2_env "$@" &> /dev/null
   fi
   start_tiller
   ;;
 env)
-  helm_env "$@"
+  helm2_env "$@"
   ;;
 run)
-  check_helm
+  check_helm2
   check_install_tiller
   start_args=()
   args=()
@@ -233,7 +233,7 @@ run)
     esac
   done
   trap stop_tiller EXIT
-  eval '$(helm_env "${start_args[@]}")'
+  eval '$(helm2_env "${start_args[@]}")'
   create_ns "${start_args[@]}" "${args[@]}"
   run_tiller "${start_args[@]}"
   # shellcheck disable=SC2145
